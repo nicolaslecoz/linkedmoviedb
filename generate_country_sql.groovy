@@ -1,7 +1,7 @@
 def class Country {
     String name;
     String currency;
-    String code;
+    String fips_code;
     String capital;
     String continent;
     String population;
@@ -10,21 +10,22 @@ def class Country {
     String iso_numeric;
     String iso_alpha2;
     String iso_alpha3;
+    String languages; // ignore
 
     public String toString() {
         StringBuilder buffer = new StringBuilder()
 
         buffer.append("(")
-        buffer.append(name).append(",")
-        buffer.append(currency).append(",")
-        buffer.append(code).append(",")
-        buffer.append(capital).append(",")
-        buffer.append(continent).append(",")
-        buffer.append(population).append(",")
-        buffer.append(id).append(",")
-        buffer.append(iso_numeric).append(",")
-        buffer.append(iso_alpha2).append(",")
-        buffer.append(iso_alpha2).append(",")
+        buffer.append("'").append(name).append("', ")
+        buffer.append("'").append(currency).append("', ")
+        buffer.append("'").append(fips_code).append("', ")
+        buffer.append("'").append(capital).append("', ")
+        buffer.append("'").append(continent).append("', ")
+        buffer.append("'").append(population).append("', ")
+        buffer.append("'").append(id).append("',")
+        buffer.append("'").append(iso_numeric).append("', ")
+        buffer.append("'").append(iso_alpha2).append("', ")
+        buffer.append("'").append(iso_alpha3).append("'")
         buffer.append(")")
         return buffer.toString()
     }
@@ -34,35 +35,45 @@ private String calculerCle(String ligne) {
     return ligne.substring(44,46)
 }
 
-private void setValueOnCountryByReflection(Country country, String attr, String value) {
-    Country.class.getDeclaredField("")
+private String calculerAttribut(String ligne) {
+    String cur = ligne.split(" ")[1]
+
+    return cur.substring(50, cur.length()-1);
 }
 
-println("..:: Generation du sql pour les country ::..")
+private String calculerValeur(String ligne) {
+    matcher = ligne =~ /<.*> <.*> "(.*)"/
+    return matcher[0][1]
+
+}
+
+private void setValueOnCountryByReflection(Country country, String attr, String value) {
+    java.lang.reflect.Method method = country.getClass().getMethod("set" + attr.capitalize(), String.class);
+    method.invoke(country, value);
+}
 
 def File f = new File("./linkedmdb-latest-dump.nt_country")
 def mapValue = [:]
 
 
 f.eachLine { ligne ->
-    println("ligne:$ligne")
-
     cle = calculerCle(ligne)
 
     if (mapValue[cle] == null) {
         mapValue[cle] = new Country()
     }
 
+    objContry = mapValue[cle]
+    attribut = calculerAttribut(ligne)
+    valeur = calculerValeur(ligne)
 
+    setValueOnCountryByReflection(objContry, attribut, valeur)
 }
 
-mapValue["test"]=new Country()
+mapValue.each {cle, valeur ->
+    println(valeur)
 
-mapValue.each {cle ->
-    println("cle=$cle")
 }
-
-println("..:: traitement termine ::..")
 
 /* generation du fichier avec cette commande :
 
